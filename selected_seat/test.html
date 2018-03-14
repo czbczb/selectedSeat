@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>选座位</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        <style>
+            span{
+                display: inline-block;
+                width: 2.8%;
+                height: 50px;
+                margin: 0.14%;
+                border: 1px solid #cccccc;
+                border-radius: 5px;
+            }
+            span:hover,span.isActive{
+                background: #393baf;
+            }
+            .parent_con{
+                width:100%px;
+                text-align: center;
+            }
+            p{
+                margin: 5px;
+                background: #913e3e;
+                height:20px;
+            }
+        </style>
+    </head>
+    <body>
+        
+
+<script>
+    function SelectedSeat(positions){
+        this.init(positions||{});
+        this.createDom(this.perRowNum);
+        
+    }
+    SelectedSeat.prototype = {
+        init:function(positions){
+            this.positions = positions;
+            this.col = 30;
+            //一共有多少的行
+            this.sumRow = Math.ceil(this.positions.num/30) ;
+            this.row_30 = Math.ceil(this.sumRow/30);
+            this.remainder_row_30 = this.sumRow%30;
+            //除过整行数的余数
+            this.remainder = this.positions.num%30;
+            //每次加载30行的座位，总共900个
+            this.perRowNum = 30;
+            //已经加载的次数
+            this.preNum = 1;
+             //已经加载的座位
+             this.mountedDomNum = this.perRowNum*this.preNum*30;
+             //剩余没有加载的座位
+             this.remain = this.positions.num - this.mountedDomNum;
+             //剩余的行数
+             this.remainRow = Math.ceil(this.remain/30);
+            this.flag = true;
+            this.parenNode=document.createElement("div");
+            this.parenNode.className = "parent_con"
+            document.body.appendChild(this.parenNode);
+            this.allSpan = null;
+
+        },
+        createDom:function (itemRow){
+            var fragmentDom = document.createDocumentFragment();
+            for(var i = 1;i<=this.perRowNum;i++){
+                for(var j = 1; j<=30;j++){
+                    var item = document.createElement("span");
+                    item.className = "item";
+                    item.setAttribute("data-row",i+(this.preNum-1)*30);
+                    console.log(this.preNum);
+                    item.setAttribute("data-col",j);
+                    fragmentDom.appendChild(item);
+                    if(i+(this.preNum-1)*30 ==this.sumRow -1){//preNum初始值为1，所以减一，sumRow-1是因为上取整
+                        return;
+                    }
+                }
+            }
+            this.parenNode.appendChild(fragmentDom) ;
+            this.allSpan = document.querySelectorAll(".parent_con span");
+            this.bind();
+        },
+        completeed:function(){
+            console.log("createLineDom 已经调用了")
+            var fragmentDom = document.createDocumentFragment();
+            var currentRow = this.sumRow+1;
+            for(var i = 1;i<=this.remainder;i++){
+                var item = document.createElement("span");
+                item.className = "item";
+                item.setAttribute("data-row",currentRow);
+                item.setAttribute("data-col",i);
+                fragmentDom.appendChild(item);
+            }
+            this.parenNode.appendChild(fragmentDom) ;
+            this.allSpan = document.querySelectorAll(".parent_con span");
+            this.bind();
+        },
+        bind:function(){
+            var _this = this;
+            //给每一个座位绑定选中事件
+            for(var i = 0;i<this.allSpan.length;i++){
+                this.allSpan[i].onclick = _this.itemClick;
+
+            }
+            //给Window设置滚动事件
+            window.onscroll = function(){
+            　　if(_this.getScrollTop() + _this.getWindowHeight() == _this.getScrollHeight()){
+                　　　　 //到达底部加载更多座位
+                    if(_this.remain < 30 && _this.remain > 0 && _this.preNum ===_this.row_30  &&_this.flag == true){
+                        _this.createLineDom();
+                        var pDom = document.createElement("p");
+                        pDom.innerText = "亲，您歇会吧，已经没有更多了";
+                        _this.parenNode.appendChild(pDom);
+                        _this.flag = false;
+                    }else if( _this.remain >30 && _this.preNum <=_this.row_30){
+                        _this.preNum +=1;
+                        _this.createDom();
+                       
+                        //已经加载的座位
+                        _this.mountedDomNum = _this.perRowNum*_this.preNum*30;
+                        //剩余没有加载的座位
+                        _this.remain = _this.positions.num - _this.mountedDomNum;
+                        //剩余的行数
+                        _this.remainRow = Math.ceil(_this.remain/30);
+                    }
+            　　}
+            }
+        },
+        itemClick:function (){
+            if(this.getAttribute("class").indexOf("isActive") != -1){
+                this.setAttribute("class","");
+            }else{
+                this.setAttribute("class","isActive");
+            }
+        },
+        //滚动条在Y轴上的滚动距离
+        getScrollTop:function (){
+        　　var scrollTop = 0, bodyScrollTop = 0, documentScrollTop = 0;
+        　　if(document.body){
+        　　　　bodyScrollTop = document.body.scrollTop;
+        　　}
+        　　if(document.documentElement){
+        　　　　documentScrollTop = document.documentElement.scrollTop;
+        　　}
+        　　scrollTop = (bodyScrollTop - documentScrollTop > 0) ? bodyScrollTop : documentScrollTop;
+        　　return scrollTop;
+        },
+        //文档的总高度
+        getScrollHeight:function (){
+        　　var scrollHeight = 0, bodyScrollHeight = 0, documentScrollHeight = 0;
+        　　if(document.body){
+        　　　　bodyScrollHeight = document.body.scrollHeight;
+        　　}
+        　　if(document.documentElement){
+        　　　　documentScrollHeight = document.documentElement.scrollHeight;
+        　　}
+        　　scrollHeight = (bodyScrollHeight - documentScrollHeight > 0) ? bodyScrollHeight : documentScrollHeight;
+        　　return scrollHeight;
+        },
+        //浏览器视口的高度
+        getWindowHeight:function (){
+        　　var windowHeight = 0;
+        　　if(document.compatMode == "CSS1Compat"){
+        　　　　windowHeight = document.documentElement.clientHeight;
+        　　}else{
+        　　　　windowHeight = document.body.clientHeight;
+        　　}
+        　　return windowHeight;
+        }
+    }
+    new SelectedSeat({
+        num: 1201
+    });
+
+
+</script>
+    </body>
+</html>
